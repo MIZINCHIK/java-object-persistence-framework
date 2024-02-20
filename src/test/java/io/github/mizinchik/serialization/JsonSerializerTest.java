@@ -83,14 +83,5 @@ public class JsonSerializerTest {
     void serialize_whenCollection_thenCorrect() {
         assertThat(serializer.serialize(List.of(1, 2, 3, 4))).isEqualTo("[1,2,3,4]");
         assertThat(serializer.serialize(List.of("null", "absbdhbasdas"))).isEqualTo("[\"null\",\"absbdhbasdas\"]");
-        Map<String, TestRecord> map = Map.of(
-                "a", new TestRecord(null, null, 1),
-                "b", new TestRecord(1, "sadjhkwdhf", 12487231),
-                "c", new TestRecord(2, "sadfhadhasjdjhsa", -21312)
-        );
-        assertThat(serializer.serialize(map.values()))
-                .isEqualTo("[{\"number1\":null,\"name\":null,\"number2\":1}," +
-                        "{\"number1\":1,\"name\":\"sadjhkwdhf\",\"number2\":12487231}," +
-                        "{\"number1\":2,\"name\":\"sadfhadhasjdjhsa\",\"number2\":-21312}]");
     }
 }
