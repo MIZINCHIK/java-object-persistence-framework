@@ -1,5 +1,9 @@
 package io.github.mizinchik.serialization;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Collection;
@@ -68,7 +72,17 @@ public class JsonSerializer implements Serializer {
     }
 
     @Override
-    public void serializeToFile(Object object) {
-        //TODO
+    public void serializeToFile(Object object, File file) {
+        if (!file.isFile()) {
+            throw new IllegalStateException("Not a regular file");
+        }
+        if (!file.setWritable(true)) {
+            throw new IllegalStateException("Couldn't make the file accessible to writing");
+        }
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
+            writer.append(serialize(object));
+        } catch (IOException e) {
+            throw new RuntimeException("Writing to file failed", e);
+        }
     }
 }
