@@ -6,7 +6,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.Map;
 
 public class JsonSerializer implements Serializer {
     @Override
@@ -34,10 +36,9 @@ public class JsonSerializer implements Serializer {
             return builder.append("]").toString();
         }
         switch (object) {
-            case Collection iterable -> {
+            case Collection<?> iterable -> {
                 builder.append("[");
-                int size = iterable.size();
-                if (size > 0) {
+                if (!iterable.isEmpty()) {
                     for (Object inner : iterable) {
                         builder.append(serialize(inner)).append(",");
                     }
@@ -45,6 +46,16 @@ public class JsonSerializer implements Serializer {
                 }
                 builder.append("]");
                 return builder.toString();
+            }
+            case Map<?, ?> map -> {
+                builder.append("{");
+                if (!map.isEmpty()) {
+                    for (var entry : map.entrySet()) {
+                        builder.append(serialize(entry.getKey())).append(":").append(serialize(entry.getValue())).append(",");
+                    }
+                    builder.deleteCharAt(builder.length() - 1);
+                }
+                return builder.append("}").toString();
             }
             default -> {
                 builder.append("{");
@@ -58,6 +69,8 @@ public class JsonSerializer implements Serializer {
         try {
             Field[] fields = object.getClass().getDeclaredFields();
             for (Field field : fields) {
+                if (Modifier.isTransient(field.getModifiers())) continue;
+                if (field.getAnnotation(Transient.class) != null) continue;
                 builder.append("\"").append(field.getName()).append("\":");
                 field.setAccessible(true);
                 Object fieldValue = field.get(object);
