@@ -4,8 +4,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -83,5 +85,62 @@ public class JsonSerializerTest {
     void serialize_whenCollection_thenCorrect() {
         assertThat(serializer.serialize(List.of(1, 2, 3, 4))).isEqualTo("[1,2,3,4]");
         assertThat(serializer.serialize(List.of("null", "absbdhbasdas"))).isEqualTo("[\"null\",\"absbdhbasdas\"]");
+    }
+
+    private record TestClass2(String name, List<Integer> numbers) {
+    }
+
+    @Test
+    @DisplayName("Serializing class with collections in fields")
+    void serialize_whenClassesWithCollectionFields_thenCorrect() {
+        assertThat(serializer.serialize(new TestClass2("sadjhsad", List.of(1, 2, 3, 4)))).isEqualTo("{\"name\":\"sadjhsad\",\"numbers\":[1,2,3,4]}");
+    }
+
+    @Test
+    @DisplayName("Serializing maps")
+    void serialize_whenMap_thenCorrect() {
+        String serializedMap = serializer.serialize(Map.of(new TestClass2("sdasd", List.of(1, 2)), 1,
+                new TestClass2("name", List.of(555)), 1,
+                new TestClass2("sd", List.of(1488)), 1));
+        List<String> atoms = List.of("{\"name\":\"sdasd\",\"numbers\":[1,2]}:1",
+                "{\"name\":\"name\",\"numbers\":[555]}:1",
+                "{\"name\":\"sd\",\"numbers\":[1488]}:1");
+        Set<String> possibleArrangements = new HashSet<>();
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i <= 2; i++) {
+            for (int j = 0; j <= 2; j++) {
+                for (int k = 0; k <= 2; k++) {
+                    if (i == j || i == k || j == k) continue;
+                    possibleArrangements.add(builder.append("{").append(atoms.get(i)).append(",")
+                            .append(atoms.get(j)).append(",").append(atoms.get(k)).append("}").toString());
+                    builder.setLength(0);
+                }
+            }
+        }
+        assertThat(possibleArrangements.contains(serializedMap)).isTrue();
+    }
+
+    private class TestClass3 {
+        private transient String name;
+        private int number;
+
+        public TestClass3(String name, int number) {
+            this.name = name;
+            this.number = number;
+        }
+    }
+
+    @Test
+    @DisplayName("Transient modifier")
+    void serialize_whenTransientModifier_thenNotSerialized() {
+        assertThat(serializer.serialize(new TestClass3("name", 1555))).isEqualTo("{\"number\":1555}");
+    }
+
+    private record TestRecord2(@Transient String name, int number) {}
+
+    @Test
+    @DisplayName("Transient annotation")
+    void serialize_whenTransientAnnotation_thenNotSerialized() {
+        assertThat(serializer.serialize(new TestRecord2("name", 1555))).isEqualTo("{\"number\":1555}");
     }
 }
