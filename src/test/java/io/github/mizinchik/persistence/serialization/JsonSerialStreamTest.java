@@ -1,4 +1,4 @@
-package io.github.mizinchik.serialization;
+package io.github.mizinchik.persistence.serialization;
 
 
 import org.json.JSONObject;

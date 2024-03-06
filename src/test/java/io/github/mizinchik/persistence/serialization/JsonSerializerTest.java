@@ -1,4 +1,4 @@
-package io.github.mizinchik.serialization;
+package io.github.mizinchik.persistence.serialization;
 
 import io.github.mizinchik.persistence.annotations.Transient;
 import io.github.mizinchik.persistence.serialization.JsonSerializer;
