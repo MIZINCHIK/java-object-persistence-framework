@@ -1,4 +1,4 @@
-package io.github.mizinchik.serialization;
+package io.github.mizinchik.persistence.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

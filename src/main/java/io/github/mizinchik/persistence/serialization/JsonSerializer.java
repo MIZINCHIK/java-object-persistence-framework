@@ -1,5 +1,6 @@
-package io.github.mizinchik.serialization;
+package io.github.mizinchik.persistence.serialization;
 
+import io.github.mizinchik.persistence.annotations.Transient;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -16,7 +17,7 @@ public class JsonSerializer implements Serializer {
         return switch (object) {
             case null -> "null";
             case Number ignored -> object.toString();
-            case Character ignored -> object.toString();
+            case Character character -> "\"" + character + "\"";
             case String string -> "\"" + string + "\"";
             default -> serializeComplex(object);
         };
@@ -74,10 +75,12 @@ public class JsonSerializer implements Serializer {
                         || field.getAnnotation(Transient.class) != null) {
                     continue;
                 }
-                builder.append("\"").append(field.getName()).append("\":");
                 field.setAccessible(true);
                 Object fieldValue = field.get(object);
-                builder.append(serialize(fieldValue)).append(",");
+                if (fieldValue != null) {
+                    builder.append("\"").append(field.getName()).append("\":");
+                    builder.append(serialize(fieldValue)).append(",");
+                }
             }
             if (fields.length > 0) {
                 builder.deleteCharAt(builder.length() - 1);
@@ -88,7 +91,7 @@ public class JsonSerializer implements Serializer {
     }
 
     @Override
-    public void serializeToFile(Object object, File file) {
+    public void serialize(Object object, File file) {
         if (!file.isFile()) {
             throw new IllegalStateException("Not a regular file");
         }
