@@ -5,15 +5,14 @@ import io.github.mizinchik.persistence.annotations.Transient;
 import io.github.mizinchik.persistence.exceptions.EmptyObjectInstantiationFailedException;
 import io.github.mizinchik.persistence.exceptions.FailedFieldAccessException;
 import io.github.mizinchik.persistence.exceptions.NoArgumentConstructorMissingException;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class JsonSerialStream<T> implements SerialStream<T> {
     private final JSONObject json;
@@ -59,7 +58,7 @@ public class JsonSerialStream<T> implements SerialStream<T> {
                     if (string.length() != 1) {
                         throw new RuntimeException("Incorrect char format");
                     }
-                    field.setChar(prototype,  string.charAt(0));
+                    field.setChar(prototype, string.charAt(0));
                 } else if (fieldType == double.class) {
                     field.setDouble(prototype, json.getDouble(fieldName));
                 } else if (fieldType == float.class) {
@@ -112,8 +111,8 @@ public class JsonSerialStream<T> implements SerialStream<T> {
 
     private static boolean isEligibleField(Field field) {
         int modifiers = field.getModifiers();
-        return !field.isAnnotationPresent(Transient.class) &&
-                !Modifier.isTransient(modifiers) &&
-                !Modifier.isFinal(modifiers);
+        return !field.isAnnotationPresent(Transient.class)
+                && !Modifier.isTransient(modifiers)
+                && !Modifier.isFinal(modifiers);
     }
 }

@@ -1,10 +1,9 @@
 package io.github.mizinchik.persistence.deserialization;
 
-import org.json.JSONObject;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import org.json.JSONObject;
 
 public class JsonDeserializer {
     public <T> JsonSerialStream<T> deserialize(Class<T> clazz, String json) {

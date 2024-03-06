@@ -1,7 +1,6 @@
 package io.github.mizinchik.persistence.serialization;
 
 import io.github.mizinchik.persistence.annotations.Transient;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
