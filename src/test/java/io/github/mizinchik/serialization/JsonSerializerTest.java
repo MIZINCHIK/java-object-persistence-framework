@@ -1,5 +1,8 @@
 package io.github.mizinchik.serialization;
 
+import io.github.mizinchik.persistence.annotations.Transient;
+import io.github.mizinchik.persistence.serialization.JsonSerializer;
+import io.github.mizinchik.persistence.serialization.Serializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +29,7 @@ public class JsonSerializerTest {
         assertThat(serializer.serialize(1L)).isEqualTo("1");
         assertThat(serializer.serialize(1D)).isEqualTo("1.0");
         assertThat(serializer.serialize(1.02130213)).isEqualTo("1.02130213");
-        assertThat(serializer.serialize('a')).isEqualTo("a");
+        assertThat(serializer.serialize('a')).isEqualTo("\"a\"");
     }
 
     @Test
@@ -60,7 +63,7 @@ public class JsonSerializerTest {
     @DisplayName("Serializing classes w/o links to others of their lot")
     void serialize_whenBasicClasses_thenCorrect() {
         assertThat(serializer.serialize(new TestClass(1, "sdasd", 2))).isEqualTo("{\"number1\":1,\"name\":\"sdasd\",\"number2\":2}");
-        assertThat(serializer.serialize(new TestClass(null, null, 2))).isEqualTo("{\"number1\":null,\"name\":null,\"number2\":2}");
+        assertThat(serializer.serialize(new TestClass(null, null, 2))).isEqualTo("{\"number2\":2}");
     }
 
     private record TestRecord(Integer number1, String name, int number2) {
@@ -70,7 +73,7 @@ public class JsonSerializerTest {
     @DisplayName("Serializing records w/o links to others of their lot")
     void serialize_whenBasicRecords_thenCorrect() {
         assertThat(serializer.serialize(new TestRecord(1, "sdasd", 2))).isEqualTo("{\"number1\":1,\"name\":\"sdasd\",\"number2\":2}");
-        assertThat(serializer.serialize(new TestRecord(null, null, 2))).isEqualTo("{\"number1\":null,\"name\":null,\"number2\":2}");
+        assertThat(serializer.serialize(new TestRecord(null, null, 2))).isEqualTo("{\"number2\":2}");
     }
 
     @Test
