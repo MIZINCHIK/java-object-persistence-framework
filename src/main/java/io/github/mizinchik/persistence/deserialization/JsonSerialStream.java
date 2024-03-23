@@ -32,10 +32,11 @@ import org.json.JSONObject;
 
 public class JsonSerialStream<T> implements SerialStream<T> {
     private ArrayList<?> arrayList;
-    private final JSONObject json;
+    private final Object json;
+    private JSONObject jsonObject;
     private final Class<T> clazz;
 
-    public JsonSerialStream(JSONObject json, Class<T> clazz) {
+    public JsonSerialStream(Object json, Class<T> clazz) {
         this.json = json;
         if (clazz.getTypeParameters().length > 0) {
             throw new ParametrizedTypeDeserializationException();
@@ -46,6 +47,7 @@ public class JsonSerialStream<T> implements SerialStream<T> {
     @Override
     public T instance() {
         try {
+            jsonObject = (JSONObject) json;
             T prototype = clazz.getConstructor().newInstance();
             List<Field> fields = Arrays.stream(clazz.getDeclaredFields())
                     .filter(JsonSerialStream::isEligibleField)
@@ -69,52 +71,52 @@ public class JsonSerialStream<T> implements SerialStream<T> {
         try {
             if (fieldType.isPrimitive() || fieldType == Character.class) {
                 if (fieldType == int.class) {
-                    field.setInt(prototype, json.getInt(fieldName));
+                    field.setInt(prototype, jsonObject.getInt(fieldName));
                 } else if (fieldType == boolean.class) {
-                    field.setBoolean(prototype, json.getBoolean(fieldName));
+                    field.setBoolean(prototype, jsonObject.getBoolean(fieldName));
                 } else if (fieldType == short.class) {
-                    field.setShort(prototype, (short) json.getInt(fieldName));
+                    field.setShort(prototype, (short) jsonObject.getInt(fieldName));
                 } else if (fieldType == char.class || fieldType == Character.class) {
-                    String string = json.getString(fieldName);
+                    String string = jsonObject.getString(fieldName);
                     if (string.length() != 1) {
                         throw new RuntimeException("Incorrect char format");
                     }
                     field.setChar(prototype, string.charAt(0));
                 } else if (fieldType == double.class) {
-                    field.setDouble(prototype, json.getDouble(fieldName));
+                    field.setDouble(prototype, jsonObject.getDouble(fieldName));
                 } else if (fieldType == float.class) {
-                    field.setFloat(prototype, json.getFloat(fieldName));
+                    field.setFloat(prototype, jsonObject.getFloat(fieldName));
                 } else if (fieldType == byte.class) {
-                    field.setByte(prototype, (byte) json.getInt(fieldName));
+                    field.setByte(prototype, (byte) jsonObject.getInt(fieldName));
                 } else if (fieldType == long.class) {
-                    field.setLong(prototype, json.getLong(fieldName));
+                    field.setLong(prototype, jsonObject.getLong(fieldName));
                 } else {
                     throw new RuntimeException("Unknown primitive");
                 }
             } else if (Number.class.isAssignableFrom(fieldType)) {
-                if (json.get(fieldName) == JSONObject.NULL) {
+                if (jsonObject.get(fieldName) == JSONObject.NULL) {
                     field.set(prototype, null);
                 } else {
                     if (fieldType == Integer.class) {
-                        field.set(prototype, json.get(fieldName));
+                        field.set(prototype, jsonObject.get(fieldName));
                     } else if (fieldType == Boolean.class) {
-                        field.set(prototype, json.getBoolean(fieldName));
+                        field.set(prototype, jsonObject.getBoolean(fieldName));
                     } else if (fieldType == Short.class) {
-                        field.set(prototype, (short) json.getInt(fieldName));
+                        field.set(prototype, (short) jsonObject.getInt(fieldName));
                     } else if (fieldType == Double.class) {
-                        field.set(prototype, json.getDouble(fieldName));
+                        field.set(prototype, jsonObject.getDouble(fieldName));
                     } else if (fieldType == Float.class) {
-                        field.set(prototype, json.getFloat(fieldName));
+                        field.set(prototype, jsonObject.getFloat(fieldName));
                     } else if (fieldType == Byte.class) {
-                        field.set(prototype, (byte) json.getInt(fieldName));
+                        field.set(prototype, (byte) jsonObject.getInt(fieldName));
                     } else if (fieldType == Long.class) {
-                        field.set(prototype, json.getLong(fieldName));
+                        field.set(prototype, jsonObject.getLong(fieldName));
                     } else {
                         throw new RuntimeException("Unknown primitive");
                     }
                 }
             } else {
-                setField(json.get(field.getName()), field, prototype);
+                setField(jsonObject.get(field.getName()), field, prototype);
             }
         } catch (IllegalAccessException e) {
             throw new FailedFieldAccessException(e);
@@ -420,13 +422,20 @@ public class JsonSerialStream<T> implements SerialStream<T> {
     }
 
     @Override
-    public List<T> list() {
-        return null;
+    public Collection<T> collection() {
+        Collection<T> list = new ArrayList<>();
+        return (Collection<T>) getCollection(Arrays.stream(list.getClass().getGenericInterfaces())
+                .filter(x -> x instanceof ParameterizedType parameterizedType && parameterizedType.getRawType() == List.class)
+                .findFirst()
+                .get(), clazz, (JSONArray) json);
     }
 
     @Override
     public <K> Map<K, T> map(Class<K> keyClazz) {
-        return null;
+        Map<K, T> map = new HashMap<>();
+        return (Map<K, T>) getMap(Arrays.stream(map.getClass().getGenericInterfaces())
+                .filter(x -> x instanceof ParameterizedType parameterizedType && parameterizedType.getRawType() == Map.class)
+                .findAny().get(), keyClazz, clazz, (JSONObject) json);
     }
 
     private static boolean isEligibleField(Field field) {
