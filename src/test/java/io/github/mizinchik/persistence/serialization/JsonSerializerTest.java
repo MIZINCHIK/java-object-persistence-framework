@@ -1,8 +1,6 @@
 package io.github.mizinchik.persistence.serialization;
 
 import io.github.mizinchik.persistence.annotations.Transient;
-import io.github.mizinchik.persistence.serialization.JsonSerializer;
-import io.github.mizinchik.persistence.serialization.Serializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -105,9 +103,9 @@ public class JsonSerializerTest {
         String serializedMap = serializer.serialize(Map.of(new TestClass2("sdasd", List.of(1, 2)), 1,
                 new TestClass2("name", List.of(555)), 1,
                 new TestClass2("sd", List.of(1488)), 1));
-        List<String> atoms = List.of("{\"name\":\"sdasd\",\"numbers\":[1,2]}:1",
-                "{\"name\":\"name\",\"numbers\":[555]}:1",
-                "{\"name\":\"sd\",\"numbers\":[1488]}:1");
+        List<String> atoms = List.of("\"{\\\"name\\\":\\\"sdasd\\\",\\\"numbers\\\":[1,2]}\":1",
+                "\"{\\\"name\\\":\\\"name\\\",\\\"numbers\\\":[555]}\":1",
+                "\"{\\\"name\\\":\\\"sd\\\",\\\"numbers\\\":[1488]}\":1");
         Set<String> possibleArrangements = new HashSet<>();
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i <= 2; i++) {
@@ -139,7 +137,8 @@ public class JsonSerializerTest {
         assertThat(serializer.serialize(new TestClass3("name", 1555))).isEqualTo("{\"number\":1555}");
     }
 
-    private record TestRecord2(@Transient String name, int number) {}
+    private record TestRecord2(@Transient String name, int number) {
+    }
 
     @Test
     @DisplayName("Transient annotation")
