@@ -425,7 +425,8 @@ public class JsonSerialStream<T> implements SerialStream<T> {
     public Collection<T> collection() {
         Collection<T> list = new ArrayList<>();
         return (Collection<T>) getCollection(Arrays.stream(list.getClass().getGenericInterfaces())
-                .filter(x -> x instanceof ParameterizedType parameterizedType && parameterizedType.getRawType() == List.class)
+                .filter(x -> x instanceof ParameterizedType parameterizedType
+                        && parameterizedType.getRawType() == List.class)
                 .findFirst()
                 .get(), clazz, (JSONArray) json);
     }
@@ -434,7 +435,8 @@ public class JsonSerialStream<T> implements SerialStream<T> {
     public <K> Map<K, T> map(Class<K> keyClazz) {
         Map<K, T> map = new HashMap<>();
         return (Map<K, T>) getMap(Arrays.stream(map.getClass().getGenericInterfaces())
-                .filter(x -> x instanceof ParameterizedType parameterizedType && parameterizedType.getRawType() == Map.class)
+                .filter(x -> x instanceof ParameterizedType parameterizedType
+                        && parameterizedType.getRawType() == Map.class)
                 .findAny().get(), keyClazz, clazz, (JSONObject) json);
     }
 
