@@ -1,12 +1,12 @@
 package io.github.mizinchik.persistence.deserialization;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
 public interface SerialStream<T> {
     T instance();
 
-    List<T> list();
+    Collection<T> collection();
 
     <K> Map<K, T> map(Class<K> keyClazz);
 }

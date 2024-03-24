@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Map;
+import org.json.JSONObject;
 
 public class JsonSerializer implements Serializer {
     @Override
@@ -52,7 +53,7 @@ public class JsonSerializer implements Serializer {
                 builder.append("{");
                 if (!map.isEmpty()) {
                     for (var entry : map.entrySet()) {
-                        builder.append(serialize(entry.getKey()))
+                        builder.append(JSONObject.quote(serialize(entry.getKey())))
                                 .append(":").append(serialize(entry.getValue())).append(",");
                     }
                     builder.deleteCharAt(builder.length() - 1);
