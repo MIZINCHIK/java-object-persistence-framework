@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
-public class JsonSerialStreamTest {
+public class JsonDeserializerTest {
     private static class TestClass {
         private char a;
         private byte b;
@@ -56,7 +56,7 @@ public class JsonSerialStreamTest {
     @CsvSource({"c,0,12172", "0,0,0", "糞,127,127"})
     @DisplayName("Deserializing simple classes with primitive fields")
     void instance_whenClassWithPrimitives_thenCorrect(char a, byte b, short c) {
-        var stream = new JsonSerialStream<>(new JSONObject(
+        var stream = new JsonDeserializer<>(new JSONObject(
                 "{\"a\":\"" + a + "\",\"b\":" + b + ",\"c\":" + c + "}"), TestClass.class);
         assertThat(stream.instance()).isEqualTo(new TestClass(a, b, c));
     }
@@ -93,7 +93,7 @@ public class JsonSerialStreamTest {
     @Test
     @DisplayName("Deserializing classes with boxed type fields")
     void instance_whenBoxedType_thenCorrect() {
-        var stream = new JsonSerialStream<>(new JSONObject("{\"longNum\": 1,\"shortNum\":1,\"byteNum\":1}"),
+        var stream = new JsonDeserializer<>(new JSONObject("{\"longNum\": 1,\"shortNum\":1,\"byteNum\":1}"),
                 BoxedFields.class);
         assertThat(stream.instance()).isEqualTo(new BoxedFields(1L, (short) 1, (byte) 1));
     }
@@ -155,7 +155,7 @@ public class JsonSerialStreamTest {
     @MethodSource("provideArgs_serialize_whenClassWithComplexFields_thenCorrect")
     @DisplayName("Deserializing classes with complex fields")
     void instance_whenClassWithComplexFields_thenCorrect(Integer number, String name, int number2) {
-        var stream = new JsonSerialStream<>(new JSONObject("{\"number\":" + number + ",\"name\":" +
+        var stream = new JsonDeserializer<>(new JSONObject("{\"number\":" + number + ",\"name\":" +
                 (name == null ? "null" : "\"" + name + "\"") + ",\"testClass2\":{\"a\":" + number2
                 + "}}"), TestClassComplex.class);
         assertThat(stream.instance()).usingRecursiveComparison().isEqualTo(new TestClassComplex(number, name, new TestClass2(number2)));
@@ -195,7 +195,7 @@ public class JsonSerialStreamTest {
     @Test
     @DisplayName("Deserializing classes with collection fields")
     void instance_whenClassWithCollectionFields_thenCorrect() {
-        var stream = new JsonSerialStream<>(new JSONObject(
+        var stream = new JsonDeserializer<>(new JSONObject(
                 "{\"numbers\":[1,2,3]," +
                         "\"longNumbers\":[1,2,3]," +
                         "\"setOfStrings\":[\"1\",\"23\"]," +
@@ -230,7 +230,7 @@ public class JsonSerialStreamTest {
     @Test
     @DisplayName("Deserializing classes with array fields")
     void instance_whenClassWithArrayFields_thenCorrect() {
-        var stream = new JsonSerialStream<>(new JSONObject(
+        var stream = new JsonDeserializer<>(new JSONObject(
                 "{\"complexArray\":[\"dsadad\",\"sdad\"],"
                         + "\"primitiveLongArray\":[1,2,3],"
                         + "\"primitiveArray\":[1,2,3]}"),
@@ -260,7 +260,7 @@ public class JsonSerialStreamTest {
     @Test
     @DisplayName("Deserializing classes with map fields")
     void instance_whenClassWithMapFields_thenCorrect() {
-        var stream = new JsonSerialStream<>(new JSONObject(
+        var stream = new JsonDeserializer<>(new JSONObject(
                 "{\"complexMap\":{\"{\\\"[[\\\\\\\"sadjkhadad\\\\\\\",\\\\\\\"sadkjasd\\\\\\\"],[\\\\\\\"b\\\\\\\",\\\\\\\"a\\\\\\\"]]\\\":2}\":3},"
                         + "\"hashMap\":{\"1\":1,\"2\":3},"
                         + "\"map\":{\"43786738\":314632,\"24328\":134213}}"),
@@ -281,7 +281,7 @@ public class JsonSerialStreamTest {
     @Test
     @DisplayName("Deserializing list of objects")
     void list_whenList_thenCorrect() {
-        var stream = new JsonSerialStream<>(new JSONArray(
+        var stream = new JsonDeserializer<>(new JSONArray(
                 "[{\"a\":a,\"b\":1,\"c\":1},"
                         + "{\"a\":b,\"b\":2,\"c\":2},"
                         + "{\"a\":c,\"b\":3,\"c\":3}]"
@@ -296,7 +296,7 @@ public class JsonSerialStreamTest {
     @Test
     @DisplayName("Deserializing a map of objects")
     void map_whenList_thenCorrect() {
-        var stream = new JsonSerialStream<>(new JSONObject(
+        var stream = new JsonDeserializer<>(new JSONObject(
                 "{\"asdsadad\":{\"a\":a,\"b\":1,\"c\":1},"
                         + "\"asfedsgrtejhh\":{\"a\":b,\"b\":2,\"c\":2},"
                         + "\"uilioultyhyb\":{\"a\":c,\"b\":3,\"c\":3}}"
