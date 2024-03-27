@@ -1,9 +1,12 @@
 package io.github.mizinchik.persistence.deserialization;
 
-import java.io.File;
+import java.util.Collection;
+import java.util.Map;
 
-public interface Deserializer {
-    <T> SerialStream<T> deserialize(Class<T> clazz, String json);
+public interface Deserializer<T> {
+    T instance();
 
-    <T> SerialStream<T> deserialize(Class<T> clazz, File json);
+    Collection<T> collection();
+
+    <K> Map<K, T> map(Class<K> keyClazz);
 }

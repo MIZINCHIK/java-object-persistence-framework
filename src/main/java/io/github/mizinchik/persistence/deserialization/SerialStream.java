@@ -1,12 +1,19 @@
 package io.github.mizinchik.persistence.deserialization;
 
+import java.io.File;
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 
 public interface SerialStream<T> {
-    T instance();
+    SerialStream<T> add(String json);
 
-    Collection<T> collection();
+    SerialStream<T> addAll(Collection<String> jsons);
 
-    <K> Map<K, T> map(Class<K> keyClazz);
+    SerialStream<T> add(File json);
+
+    SerialStream<T> addAllFiles(Collection<File> jsons);
+
+    List<T> toList();
+
+    List<T> toList(SerialFilter filter);
 }
