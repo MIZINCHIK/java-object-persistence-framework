@@ -44,43 +44,52 @@ public class JsonDeserializer<T> implements Deserializer<T> {
         this.clazz = clazz;
     }
 
+    public JsonDeserializer(JSONObject json, Class<T> clazz) {
+        this.json = json;
+        this.jsonObject = json;
+        if (clazz.getTypeParameters().length > 0) {
+            throw new ParametrizedTypeDeserializationException();
+        }
+        this.clazz = clazz;
+    }
+
     @SuppressWarnings("CyclomaticComplexity")
     public boolean isValid(String fieldName, Predicate predicate) {
-        Class targetFieldType;
         try {
+            Class targetFieldType;
             targetFieldType = clazz.getDeclaredField(fieldName).getType();
-        } catch (NoSuchFieldException e) {
+            boolean result = false;
+            if (targetFieldType.isPrimitive()
+                    || targetFieldType == Character.class
+                    || Number.class.isAssignableFrom(targetFieldType)) {
+                if (targetFieldType == int.class || targetFieldType == Integer.class) {
+                    result = predicate.test(jsonObject.getInt(fieldName));
+                } else if (targetFieldType == boolean.class || targetFieldType == Boolean.class) {
+                    result = predicate.test(jsonObject.getBoolean(fieldName));
+                } else if (targetFieldType == short.class || targetFieldType == Short.class) {
+                    result = predicate.test((short) jsonObject.getInt(fieldName));
+                } else if (targetFieldType == char.class || targetFieldType == Character.class) {
+                    String string = jsonObject.getString(fieldName);
+                    if (string.length() != 1) {
+                        return false;
+                    }
+                    result = predicate.test(string.charAt(0));
+                } else if (targetFieldType == double.class || targetFieldType == Double.class) {
+                    result = predicate.test(jsonObject.getDouble(fieldName));
+                } else if (targetFieldType == float.class || targetFieldType == Float.class) {
+                    result = predicate.test(jsonObject.getFloat(fieldName));
+                } else if (targetFieldType == byte.class || targetFieldType == Byte.class) {
+                    result = predicate.test((byte) jsonObject.getInt(fieldName));
+                } else if (targetFieldType == long.class || targetFieldType == Long.class) {
+                    result = predicate.test(jsonObject.getLong(fieldName));
+                }
+            } else {
+                result = predicate.test(jsonObject.get(fieldName));
+            }
+            return result;
+        } catch (Exception e) {
             return false;
         }
-        boolean result = false;
-        if (targetFieldType.isPrimitive()
-                || targetFieldType == Character.class
-                || Number.class.isAssignableFrom(targetFieldType)) {
-            if (targetFieldType == int.class || targetFieldType == Integer.class) {
-                result = predicate.test(jsonObject.getInt(fieldName));
-            } else if (targetFieldType == boolean.class || targetFieldType == Boolean.class) {
-                result = predicate.test(jsonObject.getBoolean(fieldName));
-            } else if (targetFieldType == short.class || targetFieldType == Short.class) {
-                result = predicate.test((short) jsonObject.getInt(fieldName));
-            } else if (targetFieldType == char.class || targetFieldType == Character.class) {
-                String string = jsonObject.getString(fieldName);
-                if (string.length() != 1) {
-                    return false;
-                }
-                result = predicate.test(string.charAt(0));
-            } else if (targetFieldType == double.class || targetFieldType == Double.class) {
-                result = predicate.test(jsonObject.getDouble(fieldName));
-            } else if (targetFieldType == float.class || targetFieldType == Float.class) {
-                result = predicate.test(jsonObject.getFloat(fieldName));
-            } else if (targetFieldType == byte.class || targetFieldType == Byte.class) {
-                result = predicate.test((byte) jsonObject.getInt(fieldName));
-            } else if (targetFieldType == long.class || targetFieldType == Long.class) {
-                result = predicate.test(jsonObject.getLong(fieldName));
-            }
-        } else {
-            result = predicate.test(jsonObject.get(fieldName));
-        }
-        return result;
     }
 
     @Override
@@ -445,9 +454,5 @@ public class JsonDeserializer<T> implements Deserializer<T> {
         return !field.isAnnotationPresent(Transient.class)
                 && !Modifier.isTransient(modifiers)
                 && !Modifier.isFinal(modifiers);
-    }
-
-    public static <T> JsonDeserializer<T> of(ClassData<T> json) {
-        return new JsonDeserializer<>(new JSONObject(json.json()), json.clazz());
     }
 }

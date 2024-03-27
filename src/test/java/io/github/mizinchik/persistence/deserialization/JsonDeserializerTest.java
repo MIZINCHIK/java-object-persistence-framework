@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 public class JsonDeserializerTest {
     private static class TestClass {
+        private static final int e = 123213;
+        private final int d = 0;
         private char a;
         private byte b;
         private short c;
