@@ -9,6 +9,7 @@ import io.github.mizinchik.persistence.exceptions.NoArgumentConstructorMissingEx
 import io.github.mizinchik.persistence.exceptions.ParametrizedTypeDeserializationException;
 import io.github.mizinchik.persistence.exceptions.UnsupportedParametrizedCollection;
 import io.github.mizinchik.persistence.exceptions.UnsupportedParametrizedMap;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -26,7 +27,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -53,50 +53,60 @@ public class JsonDeserializer<T> implements Deserializer<T> {
         this.clazz = clazz;
     }
 
+    public Map<String, Object> getRelevantFields(Set<String> fieldNames) {
+        var result = new HashMap<String, Object>();
+        for (var fieldName : fieldNames) {
+            result.put(fieldName, getField(fieldName));
+        }
+        return result;
+    }
+
     @SuppressWarnings("CyclomaticComplexity")
-    public boolean isValid(String fieldName, Predicate predicate) {
+    public Object getField(String fieldName) {
+        Object result = null;
         try {
-            Class targetFieldType;
-            targetFieldType = clazz.getDeclaredField(fieldName).getType();
-            boolean result = false;
+            Class targetFieldType = clazz.getDeclaredField(fieldName).getType();
             if (targetFieldType.isPrimitive()
                     || targetFieldType == Character.class
                     || Number.class.isAssignableFrom(targetFieldType)) {
                 if (targetFieldType == int.class || targetFieldType == Integer.class) {
-                    result = predicate.test(jsonObject.getInt(fieldName));
+                    result = jsonObject.getInt(fieldName);
                 } else if (targetFieldType == boolean.class || targetFieldType == Boolean.class) {
-                    result = predicate.test(jsonObject.getBoolean(fieldName));
+                    result = jsonObject.getBoolean(fieldName);
                 } else if (targetFieldType == short.class || targetFieldType == Short.class) {
-                    result = predicate.test((short) jsonObject.getInt(fieldName));
+                    result = (short) jsonObject.getInt(fieldName);
                 } else if (targetFieldType == char.class || targetFieldType == Character.class) {
                     String string = jsonObject.getString(fieldName);
-                    if (string.length() != 1) {
-                        return false;
+                    if (string.length() == 1) {
+                        result = string.charAt(0);
                     }
-                    result = predicate.test(string.charAt(0));
                 } else if (targetFieldType == double.class || targetFieldType == Double.class) {
-                    result = predicate.test(jsonObject.getDouble(fieldName));
+                    result = jsonObject.getDouble(fieldName);
                 } else if (targetFieldType == float.class || targetFieldType == Float.class) {
-                    result = predicate.test(jsonObject.getFloat(fieldName));
+                    result = jsonObject.getFloat(fieldName);
                 } else if (targetFieldType == byte.class || targetFieldType == Byte.class) {
-                    result = predicate.test((byte) jsonObject.getInt(fieldName));
+                    result = (byte) jsonObject.getInt(fieldName);
                 } else if (targetFieldType == long.class || targetFieldType == Long.class) {
-                    result = predicate.test(jsonObject.getLong(fieldName));
+                    result = jsonObject.getLong(fieldName);
                 }
             } else {
-                result = predicate.test(jsonObject.get(fieldName));
+                try {
+                    result = getField(jsonObject.get(fieldName), clazz.getDeclaredField(fieldName));
+                } catch (Exception ignoredAgain) {
+                }
             }
-            return result;
-        } catch (Exception e) {
-            return false;
+        } catch (Exception ignored) {
         }
+        return result;
     }
 
     @Override
     public T instance() {
         try {
             jsonObject = (JSONObject) json;
-            T prototype = clazz.getConstructor().newInstance();
+            Constructor<T> constructor = clazz.getConstructor();
+            constructor.setAccessible(true);
+            T prototype = constructor.newInstance();
             List<Field> fields = Arrays.stream(clazz.getDeclaredFields())
                     .filter(JsonDeserializer::isEligibleField)
                     .toList();
@@ -164,53 +174,51 @@ public class JsonDeserializer<T> implements Deserializer<T> {
                     }
                 }
             } else {
-                setField(jsonObject.get(field.getName()), field, prototype);
+                field.set(prototype, getField(jsonObject.get(field.getName()), field));
             }
         } catch (IllegalAccessException e) {
             throw new FailedFieldAccessException(e);
         }
     }
 
-    private void setField(Object object, Field field, T prototype) throws IllegalAccessException {
+    private Object getField(Object object, Field field) throws IllegalAccessException {
         if (object == JSONObject.NULL) {
-            field.set(prototype, null);
+            return null;
         } else if (Map.class.isAssignableFrom(field.getType())) {
-            setMapField((JSONObject) object, field, prototype);
+            return getMapField((JSONObject) object, field);
         } else {
+            Object result;
             switch (object) {
-                case JSONObject jsonObject ->
-                        setField(new JsonDeserializer<>(jsonObject, field.getType()).instance(), field, prototype);
-                case JSONArray objects -> {
+                case JSONObject jsonObject:
+                        result = new JsonDeserializer<>(jsonObject, field.getType()).instance();
+                        break;
+                case JSONArray objects:
                     Class<?> type = field.getType();
                     if (Collection.class.isAssignableFrom(type)) {
-                        setCollectionField(objects, field, prototype);
+                        result = getCollectionField(objects, field);
                     } else if (type.isArray()) {
-                        field.set(prototype, getArray(objects, field.getType().getComponentType()));
+                        result = getArray(objects, field.getType().getComponentType());
+                    } else {
+                        result = null;
                     }
-                }
-                default -> {
-                    try {
-                        field.set(prototype, object);
-                    } catch (IllegalAccessException e) {
-                        throw new FailedFieldAccessException(e);
-                    }
-                }
+                    break;
+                default:
+                    result = object;
             }
+            return result;
         }
     }
 
-    private void setCollectionField(JSONArray array, Field field, T prototype) {
+    private Object getCollectionField(JSONArray array, Field field) {
         Type genericType = field.getGenericType();
         if (genericType instanceof ParameterizedType parameterizedType) {
             Type[] typeArgs = parameterizedType.getActualTypeArguments();
             if (typeArgs.length != 1) {
                 throw new UnsupportedParametrizedCollection();
             }
-            try {
-                field.set(prototype, getCollection(genericType, typeArgs[0], array));
-            } catch (IllegalAccessException e) {
-                throw new FailedCollectionDeserializationException(e);
-            }
+            return getCollection(genericType, typeArgs[0], array);
+        } else {
+            return null;
         }
     }
 
@@ -337,19 +345,16 @@ public class JsonDeserializer<T> implements Deserializer<T> {
         }
     }
 
-    private void setMapField(JSONObject map, Field field, T prototype) {
+    private Object getMapField(JSONObject map, Field field) {
         Type genericType = field.getGenericType();
         if (genericType instanceof ParameterizedType parameterizedType) {
             Type[] typeArgs = parameterizedType.getActualTypeArguments();
             if (typeArgs.length != 2) {
                 throw new UnsupportedParametrizedMap();
             }
-            try {
-                field.set(prototype, getMap(genericType, typeArgs[0], typeArgs[1], map));
-            } catch (IllegalAccessException e) {
-                throw new FailedCollectionDeserializationException(e);
-            }
+                return getMap(genericType, typeArgs[0], typeArgs[1], map);
         }
+        return null;
     }
 
     private Map<?, ?> getMap(Type mapGenericType, Type keyType, Type valueType, JSONObject object) {

@@ -1,5 +1,6 @@
 package io.github.mizinchik.persistence.deserialization;
 
+import io.github.mizinchik.persistence.filtering.AttributeFilter;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
@@ -15,5 +16,7 @@ public interface SerialStream<T> {
 
     List<T> toList();
 
-    List<T> toList(SerialFilter filter);
+    List<T> toList(AttributeFilter filter);
+
+    List<T> toListExclude(AttributeFilter filter);
 }

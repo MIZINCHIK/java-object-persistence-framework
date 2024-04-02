@@ -1,22 +1,24 @@
 package io.github.mizinchik.persistence.deserialization;
 
+import io.github.mizinchik.persistence.filtering.AttributeFilter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.json.JSONObject;
 
 public class JsonSerialStream<T> implements SerialStream<T> {
     private final List<JsonDeserializer<T>> objects;
+    private final List<File> files;
     private final Class<T> clazz;
 
     public JsonSerialStream(Class<T> clazz) {
         this.clazz = clazz;
         objects = new ArrayList<>();
+        files = new ArrayList<>();
     }
 
     @Override
@@ -39,45 +41,53 @@ public class JsonSerialStream<T> implements SerialStream<T> {
 
     @Override
     public SerialStream<T> add(File json) {
-        try {
-            return add(Files.readString(json.toPath()));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        files.add(json);
+        return this;
     }
 
     @Override
     public SerialStream<T> addAllFiles(Collection<File> jsons) {
-        return addAll(jsons
-                .stream()
-                .map(file -> {
-                    try {
-                        return Files.readString(file.toPath());
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .toList());
+        files.addAll(jsons);
+        return this;
     }
 
     @Override
     public List<T> toList() {
-        return objects
-                .stream()
+        return obtainDeserialStream().map(JsonDeserializer::instance)
+                .toList();
+    }
+
+    @Override
+    public List<T> toList(AttributeFilter filter) {
+        return obtainDeserialStream()
+                .filter(object ->
+                        filter.evaluate(object.getRelevantFields(filter.getNecessaryFields())))
                 .map(JsonDeserializer::instance)
                 .toList();
     }
 
     @Override
-    public List<T> toList(SerialFilter filter) {
-        Map<String, Predicate> filters = filter.getFilters();
-        return objects
-                .stream()
-                .filter(object -> filters
-                        .keySet()
-                        .stream()
-                        .allMatch(key -> object.isValid(key, filters.get(key))))
+    public List<T> toListExclude(AttributeFilter filter) {
+        return obtainDeserialStream()
+                .filter(object ->
+                        !filter.evaluate(object.getRelevantFields(filter.getNecessaryFields())))
                 .map(JsonDeserializer::instance)
                 .toList();
+    }
+
+    private Stream<JsonDeserializer<T>> obtainDeserialStream() {
+        return Stream.concat(
+                objects.stream(),
+                files.stream()
+                        .map(file -> {
+                            try {
+                                return new JsonDeserializer<>(
+                                        new JSONObject(Files.readString(file.toPath())),
+                                        clazz);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+        );
     }
 }
