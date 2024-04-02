@@ -1,5 +1,6 @@
 package io.github.mizinchik.persistence.deserialization;
 
+import io.github.mizinchik.persistence.filtering.AttributeFilter;
 import io.github.mizinchik.persistence.serialization.JsonSerializer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -83,14 +84,18 @@ public class JsonSerialStreamTest {
                 .stream()
                 .map(serializer::serialize)
                 .toList());
-        JsonSerialFilter filter = new JsonSerialFilter(
+        AttributeFilter filter = new AttributeFilter(
                 "number", (Integer number) -> number < 2)
-                .negate("number")
-                .and("name", (String name) -> name.length() > 20)
-                .or("name", (String name) -> name.contains(" "));
+                .not()
+                .and(new AttributeFilter("name", (String name) -> name.length() > 20))
+                .or(new AttributeFilter("name", (String name) -> name.contains(" ")));
         List<TestClassComplex> filteredData = stream.toList(filter);
         assertThat(filteredData).usingRecursiveComparison().isEqualTo(
-                List.of(testClassComplexesData.get(2), testClassComplexesData.get(6), testClassComplexesData.get(7))
+                List.of(
+                        testClassComplexesData.get(2),
+                        testClassComplexesData.get(6),
+                        testClassComplexesData.get(7)
+                        )
         );
     }
 
@@ -113,11 +118,11 @@ public class JsonSerialStreamTest {
                 .stream()
                 .map(serializer::serialize)
                 .toList());
-        JsonSerialFilter filter = new JsonSerialFilter(
+        AttributeFilter filter = new AttributeFilter(
                 "number", (Integer number) -> number < 2)
-                .negate("number")
-                .and("name", (String name) -> name.length() > 20)
-                .or("name", (Integer name) -> name > 3);
+                .not()
+                .and(new AttributeFilter("name", (String name) -> name.length() > 20))
+                .or(new AttributeFilter("name", (Integer name) -> name > 3));
         List<TestClassComplex> filteredData = stream.toList(filter);
         assertThat(filteredData).usingRecursiveComparison().isEqualTo(
                 List.of(testClassComplexesData.get(2))
